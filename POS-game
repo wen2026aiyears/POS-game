@@ -3,142 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>模擬 POS 機點餐訓練遊戲</title>
+    <title>Starbucks POS 機點餐訓練遊戲</title>
     <style>
-        body { font-family: 'Arial', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .game-container { display: flex; width: 1000px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
-        .pos-screen { flex: 2; padding: 20px; display: flex; flex-direction: column; border-right: 2px solid #e0e0e0; }
-        .sidebar { flex: 1; padding: 20px; background: #2c3e50; color: #fff; display: flex; flex-direction: column; justify-content: space-between; }
-        .menu-grid { display: grid; grid-template-columns: repeat(3, 1-fr); gap: 12px; margin-bottom: 20px; }
-        .menu-item { background: #3498db; color: white; border: none; padding: 15px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold;}
-        .menu-item:hover { background: #2980b9; }
-        .option-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #dee2e6; }
-        .option-group { display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
-        .opt-btn { background: #fff; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .opt-btn.active { background: #e67e22; color: white; border-color: #d35400; font-weight: bold; }
-        .cart-list { border: 1px solid #ddd; height: 180px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 6px; margin-top: 10px; }
-        .cart-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; font-size: 14px; color: #333; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background-color: #f4f6f9; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #00704A; font-size: 28px; margin-bottom: 5px; }
+        .timer { font-size: 18px; color: #ff7675; font-weight: bold; }
+        
+        .game-container { display: flex; width: 1200px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
+        
+        .pos-screen { flex: 2.5; padding: 20px; display: flex; flex-direction: column; border-right: 2px solid #e0e0e0; overflow-y: auto; max-height: 90vh; }
+        
+        .sidebar { flex: 1; padding: 20px; background: #00704A; color: #fff; display: flex; flex-direction: column; justify-content: space-between; overflow-y: auto; max-height: 90vh; }
+        
+        /* 分類標籤 */
+        .category-tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .category-btn { background: #e0e0e0; border: none; padding: 10px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.2s; color: #333; }
+        .category-btn.active { background: #00704A; color: white; }
+        .category-btn:hover { background: #d0d0d0; }
+        .category-btn.active:hover { background: #005237; }
+        
+        /* 菜單網格 */
+        .menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .menu-item { background: #00704A; color: white; border: none; padding: 12px; font-size: 13px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: bold; text-align: center; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+        .menu-item:hover { background: #005237; transform: scale(1.02); }
+        .menu-item-name { font-size: 12px; }
+        .menu-item-price { font-size: 14px; margin-top: 4px; }
+        
+        /* 規格區 */
+        .option-section { background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #dee2e6; }
+        .option-section strong { color: #333; }
+        .option-group { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+        .opt-btn { background: #fff; border: 1px solid #ccc; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .opt-btn:hover { border-color: #00704A; }
+        .opt-btn.active { background: #00704A; color: white; border-color: #00704A; font-weight: bold; }
+        
+        /* 購物車 */
+        .cart-list { border: 1px solid #ddd; height: 220px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 6px; margin-top: 10px; }
+        .cart-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eee; font-size: 13px; color: #333; }
+        .cart-item-name { flex: 1; }
+        .cart-item-price { text-align: right; min-width: 50px; font-weight: bold; }
+        
+        /* 按鈕區 */
         .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
-        .btn { padding: 15px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-clear { background: #e74c3c; color: white; }
-        .btn-submit { background: #2ecc71; color: white; }
-        .task-box { background: #e67e22; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 18px; font-weight: bold; border-left: 5px solid #d35400; }
-        .score-board { font-size: 20px; margin-bottom: 10px; font-weight: bold; }
-        .timer { font-size: 20px; color: #ff7675; font-weight: bold; margin-bottom: 20px; }
+        .btn-clear:hover { background: #c0392b; }
+        .btn-submit { background: #27ae60; color: white; }
+        .btn-submit:hover { background: #229954; }
+        .btn-add { background: #9b59b6; color: white; margin-top: 10px; }
+        .btn-add:hover { background: #8e44ad; }
+        
+        /* 任務框 */
+        .task-box { background: #00704A; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; font-weight: bold; border-left: 5px solid #005237; color: white; }
+        .task-item { margin: 8px 0; padding: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        /* 分數面板 */
+        .score-board { font-size: 20px; margin-bottom: 10px; font-weight: bold; color: #fff; }
+        .score-value { font-size: 28px; color: #ffd700; }
+        
+        /* 隱藏元素 */
+        .hidden { display: none !important; }
+        
+        /* 響應式 */
+        @media (max-width: 1400px) {
+            .menu-grid { grid-template-columns: repeat(3, 1fr); }
+            .game-container { width: 100%; }
+        }
     </style>
 </head>
 <body>
 
-    <h1 style="color: #2c3e50; margin-bottom: 10px;">🥤 飲料店 POS 機熟練度訓練</h1>
-    <div class="timer">剩餘時間：<span id="time-left">60</span> 秒</div>
+    <div class="header">
+        <h1>☕ Starbucks POS 機熟練度訓練</h1>
+        <div class="timer">剩餘時間：<span id="time-left">90</span> 秒</div>
+    </div>
 
     <div class="game-container">
         <!-- POS 操作主畫面 -->
         <div class="pos-screen">
-            <h3 style="margin-top:0; color:#555;">點餐面板</h3>
+            <h3 style="color: #00704A; margin-bottom: 10px;">📋 點餐面板</h3>
             
-            <!-- 商品區 -->
-            <div class="menu-grid">
-                <button class="menu-item" onclick="selectProduct('珍珠奶茶', 55)">珍珠奶茶 $55</button>
-                <button class="menu-item" onclick="selectProduct('經典紅茶', 30)">經典紅茶 $30</button>
-                <button class="menu-item" onclick="selectProduct('四季春茶', 35)">四季春茶 $35</button>
-                <button class="menu-item" onclick="selectProduct('香檸綠茶', 50)">香檸綠茶 $50</button>
-                <button class="menu-item" onclick="selectProduct('芋頭鮮奶', 70)">芋頭鮮奶 $70</button>
-                <button class="menu-item" onclick="selectProduct('百香雙響炮', 60)">百香雙響炮 $60</button>
+            <!-- 分類選擇 -->
+            <div class="category-tabs">
+                <button class="category-btn active" onclick="switchCategory('hot')">☕ 熱飲</button>
+                <button class="category-btn" onclick="switchCategory('cold')">🧊 冰飲</button>
+                <button class="category-btn" onclick="switchCategory('food')">🥐 食品</button>
+                <button class="category-btn" onclick="switchCategory('bundle')">🎁 組合</button>
             </div>
 
-            <!-- 客製化規格選單 -->
+            <!-- 菜單網格 -->
+            <div class="menu-grid" id="menu-grid"></div>
+
+            <!-- 規格選項 -->
             <div class="option-section">
-                <div><strong>甜度調整：</strong></div>
-                <div class="option-group" id="sugar-group">
-                    <button class="opt-btn active" onclick="setOption('sugar', '正常糖')">正常糖</button>
-                    <button class="opt-btn" onclick="setOption('sugar', '少糖')">少糖</button>
-                    <button class="opt-btn" onclick="setOption('sugar', '半糖')">半糖</button>
-                    <button class="opt-btn" onclick="setOption('sugar', '微糖')">微糖</button>
-                    <button class="opt-btn" onclick="setOption('sugar', '無糖')">無糖</button>
+                <div><strong>🍯 甜度調整：</strong></div>
+                <div class="option-group" id="sugar-group"></div>
+            </div>
+
+            <div class="option-section" id="ice-section">
+                <div><strong>🧊 冰塊調整：</strong></div>
+                <div class="option-group" id="ice-group"></div>
+            </div>
+
+            <div class="option-section" id="temp-section" class="hidden">
+                <div><strong>🌡️ 溫度調整：</strong></div>
+                <div class="option-group" id="temp-group">
+                    <button class="opt-btn active" onclick="setOption('temp', '熱')">熱</button>
+                    <button class="opt-btn" onclick="setOption('temp', '溫')">溫</button>
                 </div>
             </div>
 
-            <div class="option-section">
-                <div><strong>冰塊調整：</strong></div>
-                <div class="option-group" id="ice-group">
-                    <button class="opt-btn active" onclick="setOption('ice', '正常冰')">正常冰</button>
-                    <button class="opt-btn" onclick="setOption('ice', '少冰')">少冰</button>
-                    <button class="opt-btn" onclick="setOption('ice', '微冰')">微冰</button>
-                    <button class="opt-btn" onclick="setOption('ice', '去冰')">去冰</button>
-                    <button class="opt-btn" onclick="setOption('ice', '完全去冰')">完全去冰</button>
-                </div>
-            </div>
-
-            <button class="btn btn-submit" style="background:#9b59b6; margin-top:10px;" onclick="addToCart()">➕ 加入購物車</button>
+            <button class="btn btn-add" onclick="addToCart()">➕ 加入購物車</button>
         </div>
 
         <!-- 右側明細與任務提示 -->
         <div class="sidebar">
             <div>
-                <div class="score-board">得分：<span id="score">0</span></div>
+                <div class="score-board">得分：<span class="score-value" id="score">0</span></div>
+                
                 <div class="task-box">
-                    🎯 顧客訂單：<br>
-                    <span id="task-text">載入中...</span>
+                    🎯 顧客訂單：
+                    <div id="task-text" style="margin-top: 8px;"></div>
                 </div>
-                <h3>🛒 目前點購明細</h3>
+
+                <h3 style="margin-bottom: 10px; font-size: 16px;">🛒 目前購物車</h3>
                 <div class="cart-list" id="cart-display"></div>
-                <h2 style="text-align: right; margin-top: 15px;">總計: $<span id="total-price">0</span></h2>
+                <h2 style="text-align: right; margin-top: 15px; font-size: 18px;">總計: $<span id="total-price">0</span></h2>
             </div>
 
             <div class="action-btns">
-                <button class="btn btn-clear" onclick="clearCart()">清除</button>
-                <button class="btn btn-submit" onclick="checkAnswer()">結帳送出</button>
+                <button class="btn btn-clear" onclick="clearCart()">🗑️ 清除</button>
+                <button class="btn btn-submit" onclick="checkAnswer()">✓ 結帳送出</button>
             </div>
         </div>
     </div>
 
     <script>
-        // 遊戲資料與狀態
-        const products = ['珍珠奶茶', '經典紅茶', '四季春茶', '香檸綠茶', '芋頭鮮奶', '百香雙響炮'];
-        const sugars = ['正常糖', '少糖', '半糖', '微糖', '無糖'];
-        const ices = ['正常冰', '少冰', '微冰', '去冰', '完全去冰'];
-        
-        let currentTask = {};
-        let currentSelection = { name: '珍珠奶茶', price: 55, sugar: '正常糖', ice: '正常冰' };
-        let cart = [];
-        let score = 0;
-        let timeLeft = 60;
-        let gameInterval;
+        // 完整菜單數據
+        const menuData = {
+            hot: [
+                // 現煮義式
+                { name: '那堤', price: 65, category: 'hot', type: '現煮義式' },
+                { name: '摩卡', price: 65, category: 'hot', type: '現煮義式' },
+                { name: '美式咖啡', price: 55, category: 'hot', type: '現煮義式' },
+                { name: '卡布奇諾', price: 65, category: 'hot', type: '現煮義式' },
+                { name: '焦糖瑪奇朵', price: 70, category: 'hot', type: '現煮義式' },
+                { name: '風味那堤', price: 70, category: 'hot', type: '現煮義式' },
+                { name: '馥列白', price: 70, category: 'hot', type: '現煮義式' },
+                // 特選濃縮咖啡
+                { name: '特選那堤', price: 75, category: 'hot', type: '特選濃縮' },
+                { name: '特選摩卡', price: 75, category: 'hot', type: '特選濃縮' },
+                { name: '特選美式', price: 65, category: 'hot', type: '特選濃縮' },
+                // 茶飲
+                { name: '經典紅茶那堤', price: 65, category: 'hot', type: '茶飲' },
+                { name: '玫瑰蜜香茶那堤', price: 70, category: 'hot', type: '茶飲' },
+                { name: '伯爵茶那堤', price: 65, category: 'hot', type: '茶飲' },
+                { name: '醇濃抹茶那堤', price: 70, category: 'hot', type: '茶飲' },
+                // 其他熱飲
+                { name: '經典熱巧克力', price: 55, category: 'hot', type: '其他' },
+                { name: '熱牛奶', price: 45, category: 'hot', type: '其他' },
+            ],
+            cold: [
+                // 冰義式
+                { name: '冰那堤', price: 65, category: 'cold', type: '冰義式' },
+                { name: '冰摩卡', price: 65, category: 'cold', type: '冰義式' },
+                { name: '冰美式咖啡', price: 55, category: 'cold', type: '冰義式' },
+                { name: '冰焦糖瑪奇朵', price: 70, category: 'cold', type: '冰義式' },
+                { name: '冰風味那堤', price: 70, category: 'cold', type: '冰義式' },
+                { name: '雲朵冰搖咖啡', price: 75, category: 'cold', type: '冰義式' },
+                // 冰茶飲
+                { name: '冰經典紅茶那堤', price: 65, category: 'cold', type: '冰茶' },
+                { name: '冰玫瑰蜜香茶那堤', price: 70, category: 'cold', type: '冰茶' },
+                { name: '冰蜜柚紅茶', price: 60, category: 'cold', type: '冰茶' },
+                { name: '冰伯爵茶那堤', price: 65, category: 'cold', type: '冰茶' },
+                { name: '冰醇濃抹茶那堤', price: 70, category: 'cold', type: '冰茶' },
+                { name: '冰搖檸檬紅茶', price: 65, category: 'cold', type: '冰茶' },
+                // 星冰樂
+                { name: '摩卡星冰樂', price: 75, category: 'cold', type: '星冰樂' },
+                { name: '焦糖星冰樂', price: 75, category: 'cold', type: '星冰樂' },
+                { name: '抹茶奶霜星冰樂', price: 80, category: 'cold', type: '星冰樂' },
+                // 冷萃
+                { name: '冷萃咖啡', price: 65, category: 'cold', type: '冷萃' },
+                { name: '西印度櫻桃香檸冷萃咖啡', price: 75, category: 'cold', type: '冷萃' },
+            ],
+            food: [
+                { name: '起司牛肉可頌', price: 95, category: 'food', type: '三明治' },
+                { name: '炭燒肉片起司捲餅', price: 100, category: 'food', type: '捲餅' },
+                { name: '開心果奶油鹽可頌', price: 70, category: 'food', type: '麵包' },
+                { name: '原味布丁', price: 60, category: 'food', type: '點心' },
+                { name: '起司塔', price: 65, category: 'food', type: '點心' },
+                { name: '司康', price: 55, category: 'food', type: '點心' },
+                { name: '巴斯克乳酪蛋糕', price: 85, category: 'food', type: '蛋糕' },
+                { name: '經典輕乳酪蛋糕', price: 75, category: 'food', type: '蛋糕' },
+                { name: '波士頓派', price: 80, category: 'food', type: '蛋糕' },
+                { name: '綜合堅果塔', price: 50, category: 'food', type: '加購' },
+                { name: '比利時風格鬆餅', price: 50, category: 'food', type: '加購' },
+                { name: '經典可麗露', price: 50, category: 'food', type: '加購' },
+                { name: '葡萄乾司康', price: 60, category: 'food', type: '加購' },
+                { name: '蜜桃果粒優格', price: 75, category: 'food', type: '加購' },
+            ],
+            bundle: [
+                { name: '夏2舒肥雞套餐', price: 180, category: 'bundle', type: '套餐' },
+                { name: '夏2炭燒肉片捲餅套餐', price: 190, category: 'bundle', type: '套餐' },
+                { name: '夏2卡布里帕里尼套餐', price: 185, category: 'bundle', type: '套餐' },
+                { name: '網頁午茶那堤組合', price: 120, category: 'bundle', type: '午茶' },
+                { name: '飲料加購50組合', price: 50, category: 'bundle', type: '加購' },
+                { name: '飲料加購60組合', price: 60, category: 'bundle', type: '加購' },
+                { name: '飲料加購75組合', price: 75, category: 'bundle', type: '加購' },
+            ]
+        };
+
+        // 遊戲狀態
+        const gameState = {
+            currentCategory: 'hot',
+            currentTask: {},
+            currentSelection: { name: '', price: 0, sugar: '正常糖', ice: '正常冰', temp: '熱' },
+            cart: [],
+            score: 0,
+            timeLeft: 90,
+            gameInterval: null,
+            taskList: [] // 現有任務清單
+        };
+
+        // 選項資料
+        const options = {
+            sugar: ['正常糖', '少糖', '半糖', '微糖', '無糖'],
+            ice: ['正常冰', '少冰', '微冰', '去冰', '完全去冰'],
+            temp: ['熱', '溫']
+        };
 
         // 初始化遊戲
         function startGame() {
+            renderMenuItems(gameState.currentCategory);
+            renderOptions();
             generateTask();
-            gameInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('time-left').innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(gameInterval);
-                    alert(`遊戲結束！您的最終得分是：${score} 分`);
+            gameState.gameInterval = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('time-left').innerText = gameState.timeLeft;
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.gameInterval);
+                    alert(`遊戲結束！您的最終得分是：${gameState.score} 分`);
                     location.reload();
                 }
             }, 1000);
         }
 
-        // 隨機出題
-        function generateTask() {
-            const randomProd = products[Math.floor(Math.random() * products.length)];
-            const randomSugar = sugars[Math.floor(Math.random() * sugars.length)];
-            const randomIce = ices[Math.floor(Math.random() * ices.length)];
-            currentTask = { name: randomProd, sugar: randomSugar, ice: randomIce };
-            document.getElementById('task-text').innerHTML = `👉 <span style="color:#fff; background:#c0392b; padding:2px 6px; border-radius:4px;">${randomProd}</span><br>【${randomSugar} / ${randomIce}】`;
+        // 切換分類
+        function switchCategory(category) {
+            gameState.currentCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMenuItems(category);
+            
+            // 顯示/隱藏冰塊選項（食品和組合不需要）
+            const iceSection = document.getElementById('ice-section');
+            if (category === 'food' || category === 'bundle') {
+                iceSection.classList.add('hidden');
+                document.getElementById('temp-section').classList.remove('hidden');
+            } else {
+                iceSection.classList.remove('hidden');
+                document.getElementById('temp-section').classList.add('hidden');
+            }
+        }
+
+        // 渲染菜單項目
+        function renderMenuItems(category) {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = '';
+            menuData[category].forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'menu-item';
+                btn.innerHTML = `<div class="menu-item-name">${item.name}</div><div class="menu-item-price">$${item.price}</div>`;
+                btn.onclick = () => selectProduct(item.name, item.price);
+                grid.appendChild(btn);
+            });
+        }
+
+        // 渲染規格選項
+        function renderOptions() {
+            // 甜度
+            const sugarGroup = document.getElementById('sugar-group');
+            sugarGroup.innerHTML = '';
+            options.sugar.forEach((sugar, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `opt-btn ${idx === 0 ? 'active' : ''}`;
+                btn.innerText = sugar;
+                btn.onclick = () => setOption('sugar', sugar);
+                sugarGroup.appendChild(btn);
+            });
+
+            // 冰塊
+            const iceGroup = document.getElementById('ice-group');
+            iceGroup.innerHTML = '';
+            options.ice.forEach((ice, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `opt-btn ${idx === 0 ? 'active' : ''}`;
+                btn.innerText = ice;
+                btn.onclick = () => setOption('ice', ice);
+                iceGroup.appendChild(btn);
+            });
         }
 
         // 選擇商品
         function selectProduct(name, price) {
-            currentSelection.name = name;
-            currentSelection.price = price;
-            alert(`已選取: ${name}`);
+            gameState.currentSelection = { name, price, sugar: '正常糖', ice: '正常冰', temp: '熱' };
         }
 
-        // 選擇規格 (甜度/冰塊)
+        // 選擇規格
         function setOption(type, value) {
-            currentSelection[type] = value;
+            gameState.currentSelection[type] = value;
             const container = document.getElementById(`${type}-group`);
             const buttons = container.getElementsByClassName('opt-btn');
             for (let btn of buttons) {
@@ -149,7 +325,11 @@
 
         // 加入購物車
         function addToCart() {
-            cart.push({ ...currentSelection });
+            if (!gameState.currentSelection.name) {
+                alert('請先選擇商品！');
+                return;
+            }
+            gameState.cart.push({ ...gameState.currentSelection });
             updateCartDisplay();
         }
 
@@ -158,37 +338,115 @@
             const container = document.getElementById('cart-display');
             container.innerHTML = '';
             let total = 0;
-            cart.forEach(item => {
+            gameState.cart.forEach((item, idx) => {
                 total += item.price;
-                container.innerHTML += `<div class="cart-item"><span>${item.name} (${item.sugar}/${item.ice})</span><span>$${item.price}</span></div>`;
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                
+                const category = gameState.currentCategory;
+                let details = '';
+                if (category === 'hot' || category === 'cold') {
+                    details = `(${item.sugar}/${item.ice})`;
+                } else {
+                    details = `(${item.temp})`;
+                }
+                
+                div.innerHTML = `
+                    <span class="cart-item-name">${item.name} ${details}</span>
+                    <span class="cart-item-price">$${item.price}</span>
+                `;
+                container.appendChild(div);
             });
             document.getElementById('total-price').innerText = total;
         }
 
         // 清除購物車
         function clearCart() {
-            cart = [];
+            gameState.cart = [];
             updateCartDisplay();
         }
 
-        // 檢查答案是否正確
-        function checkAnswer() {
-            if (cart.length === 1 && 
-                cart[0].name === currentTask.name && 
-                cart[0].sugar === currentTask.sugar && 
-                cart[0].ice === currentTask.ice) {
-                score += 10;
-                document.getElementById('score').innerText = score;
-                alert('🎯 點單正確！得分 +10');
-                clearCart();
-                generateTask();
+        // 隨機出題
+        function generateTask() {
+            const allCategories = ['hot', 'cold', 'food', 'bundle'];
+            const randomCat = allCategories[Math.floor(Math.random() * allCategories.length)];
+            const items = menuData[randomCat];
+            const randomItem = items[Math.floor(Math.random() * items.length)];
+            
+            let task = { 
+                name: randomItem.name, 
+                price: randomItem.price,
+                category: randomCat,
+                sugar: options.sugar[Math.floor(Math.random() * options.sugar.length)],
+                ice: options.ice[Math.floor(Math.random() * options.ice.length)],
+                temp: options.temp[Math.floor(Math.random() * options.temp.length)]
+            };
+            
+            gameState.currentTask = task;
+            updateTaskDisplay();
+        }
+
+        // 更新任務顯示
+        function updateTaskDisplay() {
+            const task = gameState.currentTask;
+            const taskText = document.getElementById('task-text');
+            
+            let details = '';
+            if (task.category === 'hot' || task.category === 'cold') {
+                details = `<div class="task-item">甜度：${task.sugar}</div><div class="task-item">冰塊：${task.ice}</div>`;
             } else {
-                alert('❌ 點單錯誤或明細不符，請重新核對客人的要求！');
-                clearCart();
+                details = `<div class="task-item">備註：${task.temp}</div>`;
+            }
+            
+            taskText.innerHTML = `
+                <div class="task-item" style="background: rgba(255,255,255,0.3); font-size: 16px;">👉 ${task.name}</div>
+                ${details}
+                <div class="task-item">價格：$${task.price}</div>
+            `;
+        }
+
+        // 檢查答案
+        function checkAnswer() {
+            if (gameState.cart.length === 0) {
+                alert('購物車為空，請加入商品！');
+                return;
+            }
+
+            if (gameState.cart.length === 1) {
+                const item = gameState.cart[0];
+                const task = gameState.currentTask;
+                
+                if (item.name === task.name && item.price === task.price) {
+                    // 檢查規格（飲料需要檢查，食品不需要）
+                    if (task.category === 'hot' || task.category === 'cold') {
+                        if (item.sugar === task.sugar && item.ice === task.ice) {
+                            correctAnswer();
+                        } else {
+                            alert('❌ 規格錯誤！請確認甜度和冰塊的設定');
+                            clearCart();
+                        }
+                    } else {
+                        correctAnswer();
+                    }
+                } else {
+                    alert('❌ 商品或價格錯誤！');
+                    clearCart();
+                }
+            } else {
+                alert('❌ 購物車內應只有一項商品！');
             }
         }
 
-        // 啟動
+        // 答題正確
+        function correctAnswer() {
+            gameState.score += 10;
+            document.getElementById('score').innerText = gameState.score;
+            alert('🎯 點單正確！得分 +10');
+            clearCart();
+            generateTask();
+        }
+
+        // 啟動遊戲
         window.onload = startGame;
     </script>
 </body>
